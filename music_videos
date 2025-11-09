@@ -1,0 +1,183 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.0
+-- Dumped by pg_dump version 17.0
+
+-- Started on 2025-10-28 16:27:04 CET
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 218 (class 1259 OID 16406)
+-- Name: Izvodaci; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Izvodaci" (
+    "Ime" character varying NOT NULL
+);
+
+
+ALTER TABLE public."Izvodaci" OWNER TO postgres;
+
+--
+-- TOC entry 217 (class 1259 OID 16389)
+-- Name: Spotovi; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Spotovi" (
+    "Naslov" character varying NOT NULL,
+    "Redatelj" character varying,
+    "Label" character varying,
+    "Datum" date NOT NULL,
+    "Trajanje_sekunde" integer NOT NULL,
+    "Zanr" character varying,
+    "Pregledi" integer NOT NULL,
+    "Komentari" integer NOT NULL,
+    "Lajkovi" integer NOT NULL
+);
+
+
+ALTER TABLE public."Spotovi" OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 16558)
+-- Name: spotizvodac; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.spotizvodac (
+    izvodac character varying(100) NOT NULL,
+    naslovspota character varying(200) NOT NULL
+);
+
+
+ALTER TABLE public.spotizvodac OWNER TO postgres;
+
+--
+-- TOC entry 3611 (class 0 OID 16406)
+-- Dependencies: 218
+-- Data for Name: Izvodaci; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Izvodaci" ("Ime") FROM stdin;
+Travis Scott
+Drake
+J. Cole
+Tyler, The Creator
+Childish Gambino
+Kendrick Lamar
+KSI
+Trippie Redd
+Playboi Carti
+\.
+
+
+--
+-- TOC entry 3610 (class 0 OID 16389)
+-- Dependencies: 217
+-- Data for Name: Spotovi; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Spotovi" ("Naslov", "Redatelj", "Label", "Datum", "Trajanje_sekunde", "Zanr", "Pregledi", "Komentari", "Lajkovi") FROM stdin;
+Drake - First Person Shooter ft. J. Cole	Gibson Hazard	OVO	2023-11-15	300	Hip-hop/Rap	67461946	61134	1200000
+Travis Scott - FE!N ft. Playboi Carti 	Gabriel Moses	Cactus Jack Records	2024-03-30	209	Hip-hop/Rap	100240856	51076	1700000
+Travis Scott - Drugs You Should Try It 	Jordan Hemingway	Cactus Jack Records	2024-08-27	208	Hip-hop/Rap	6595208	12610	280000
+Travis Scott - MO CITY FLEXOLOGIST	Kahlil Joseph	Cactus Jack Records	2024-09-24	216	Hip-hop/Rap	6538357	7559	275000
+THOUGHT I WAS DEAD	Tyler Okonma	Columbia Records	2024-10-26	108	Hip-hop/Rap	3784264	24070	466000
+NOID	Tyler Okonma	Columbia Records	2024-10-21	162	Hip-hop/Rap	8689820	31782	699000
+Childish Gambino - This Is America (Official Video)	Hiro Murai	RCA Records	2018-05-06	246	Hip-hop/Rap	934548549	791503	12000000
+KSI - Thick Of It (feat. Trippie Redd) [Official Music Video] 	KC Locke\n	Atlantic Records UK	2024-10-03	176	Hip-hop/Rap	44248440	522112	922000
+EARFQUAKE	Tyler Okonma	Columbia Records	2019-05-17	266	Hip-hop/Rap	155996909	98431	3000000
+Kendrick Lamar - Not Like Us	Kendrick Lamar, Dave Free	Interscope Records	2024-05-07	354	Hip-hop/Rap	162807195	289832	4900000
+\.
+
+
+--
+-- TOC entry 3612 (class 0 OID 16558)
+-- Dependencies: 219
+-- Data for Name: spotizvodac; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.spotizvodac (izvodac, naslovspota) FROM stdin;
+KSI	KSI - Thick Of It (feat. Trippie Redd) [Official Music Video] 
+Trippie Redd	KSI - Thick Of It (feat. Trippie Redd) [Official Music Video] 
+Travis Scott	Travis Scott - MO CITY FLEXOLOGIST
+Travis Scott	Travis Scott - FE!N ft. Playboi Carti 
+Travis Scott	Travis Scott - Drugs You Should Try It 
+Playboi Carti	Travis Scott - FE!N ft. Playboi Carti 
+Kendrick Lamar	Kendrick Lamar - Not Like Us
+Tyler, The Creator	THOUGHT I WAS DEAD
+Tyler, The Creator	NOID
+Tyler, The Creator	EARFQUAKE
+J. Cole	Drake - First Person Shooter ft. J. Cole
+Drake	Drake - First Person Shooter ft. J. Cole
+Childish Gambino	Childish Gambino - This Is America (Official Video)
+\.
+
+
+--
+-- TOC entry 3460 (class 2606 OID 16412)
+-- Name: Izvodaci Imena_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Izvodaci"
+    ADD CONSTRAINT "Imena_pkey" PRIMARY KEY ("Ime");
+
+
+--
+-- TOC entry 3458 (class 2606 OID 16395)
+-- Name: Spotovi Video spotovi_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Spotovi"
+    ADD CONSTRAINT "Video spotovi_pkey" PRIMARY KEY ("Naslov");
+
+
+--
+-- TOC entry 3462 (class 2606 OID 16562)
+-- Name: spotizvodac spotizvodac_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.spotizvodac
+    ADD CONSTRAINT spotizvodac_pkey PRIMARY KEY (izvodac, naslovspota);
+
+
+--
+-- TOC entry 3463 (class 2606 OID 16563)
+-- Name: spotizvodac spotizvodac_izvodac_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.spotizvodac
+    ADD CONSTRAINT spotizvodac_izvodac_fkey FOREIGN KEY (izvodac) REFERENCES public."Izvodaci"("Ime");
+
+
+--
+-- TOC entry 3464 (class 2606 OID 16568)
+-- Name: spotizvodac spotizvodac_naslovspota_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.spotizvodac
+    ADD CONSTRAINT spotizvodac_naslovspota_fkey FOREIGN KEY (naslovspota) REFERENCES public."Spotovi"("Naslov");
+
+
+-- Completed on 2025-10-28 16:27:04 CET
+
+--
+-- PostgreSQL database dump complete
+--
+
