@@ -1,0 +1,69 @@
+{
+    "$schema": "https://json-schema.org/draft/2019-09/schema",
+    "$id": "http://example.com/example.json",
+    "type": "array",
+    "title": "YouTube Spotovi",
+    "description": "Skup spotova objavljenih na YouTube platformu",
+    "items": {
+        "type": "object",
+        "title": "YouTube Spotovi",
+        "required": [
+            "Naslov",
+            "Redatelj",
+            "Label",
+            "Datum",
+            "Trajanje_sekunde",
+            "Zanr",
+            "Pregledi",
+            "Komentari",
+            "Lajkovi",
+            "Izvodaci"
+        ],
+        "properties": {
+            "Naslov": {
+                "type": "string",
+                "title": "Naslov"
+            },
+            "Redatelj": {
+                "type": "string",
+                "title": "Redatelj"
+            },
+            "Label": {
+                "type": "string",
+                "title": "Izdavačka kuća"
+            },
+            "Datum": {
+                "type": "string",
+                "title": "Datum"
+            },
+            "Trajanje_sekunde": {
+                "type": "integer",
+                "title": "Trajanje u sekundama"
+            },
+            "Zanr": {
+                "type": "string",
+                "title": "Žanr"
+            },
+            "Pregledi": {
+                "type": "integer",
+                "title": "Broj pregleda"
+            },
+            "Komentari": {
+                "type": "integer",
+                "title": "Broj komentara"
+            },
+            "Lajkovi": {
+                "type": "integer",
+                "title": "Broj lajkova"
+            },
+            "Izvodaci": {
+                "type": "array",
+                "title": "Izvođači",
+                "items": {
+                    "type": "string",
+                    "title": "A Schema"
+                }
+            }
+        }
+    }
+}
