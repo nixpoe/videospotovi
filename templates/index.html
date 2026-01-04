@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Prikaz skupa podataka o osobama">
+    <meta name="author" content="Ime Autora">
+    <title>Skup Podataka</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Dobrodošli na stranicu skupa podataka</h1>
+        <p>Ovdje možete preuzeti podatke u CSV i JSON formatu ili ih pogledati u tablici.</p>
+        
+        <div class="mb-3">
+            <a href="/api/v1/spots" download="spots.json" class="btn btn-primary">Preuzmi sve podatke u JSON formatu</a>
+            <br><br>
+            <a href="/datatable" class="btn btn-secondary">Pogledaj podatke u tablici</a>
+        </div>
+
+        <div class="mt-5">
+            <h2>API Dokumentacija</h2>
+            <div class="card">
+                <div class="card-body">
+                    <h3>Dostupni endpointi:</h3>
+                    <ul class="list-group">
+                        <li class="list-group-item"><code>GET /api/videos</code> - Dohvati sve spotove</li>
+                        <li class="list-group-item"><code>GET /api/videos/{id}</code> - Dohvati spot po ID-u</li>
+                        <li class="list-group-item"><code>POST /api/videos</code> - Dodaj novi spot</li>
+                        <li class="list-group-item"><code>PUT /api/videos/{id}</code> - Ažuriraj postojeći spot</li>
+                        <li class="list-group-item"><code>DELETE /api/videos/{id}</code> - Obriši spot</li>
+                        <li class="list-group-item"><code>GET /api/videos/by-artist/{artist}</code> - Filtriraj po izvođaču</li>
+                        <li class="list-group-item"><code>GET /api/videos/by-year/{year}</code> - Filtriraj po godini</li>
+                        <li class="list-group-item"><code>GET /api/videos/most-viewed</code> - Dohvati najgledanije spotove</li>
+                        <li class="list-group-item"><code>GET /api/docs</code> - Dohvati OpenAPI specifikaciju</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Example script for fetching data
+        async function fetchData() {
+            const response = await fetch('/api/v1/spots');
+            const data = await response.json();
+            console.log(data);
+        }
+
+        // Uncomment to test fetching data
+        // fetchData();
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
