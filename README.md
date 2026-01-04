@@ -1,9 +1,9 @@
 # Video spotovi za pjesme na YouTube-u
 
-Ovaj skup podataka sastoji se od informacija o video spotovima za pjesme dostupnim na YouTube platformi. Podaci su licencirani prema otvorenoj licenci **Creative Commons Zero v1.0**, čime je omogućeno slobodno korištenje i dijeljenje podataka. Ovo je verzija **2.0** skupa podataka, a svi podaci su dostupni na **hrvatskom jeziku**.
+Ovaj skup podataka sastoji se od informacija o video spotovima za pjesme dostupnim na YouTube platformi. Podaci su licencirani prema otvorenoj licenci **Creative Commons Zero v1.0**, čime je omogućeno slobodno korištenje i dijeljenje podataka. Ovo je verzija **3.0**, a svi podaci su dostupni na **hrvatskom jeziku**.
 
 # Autor - Nikola Antolović
-# Verzija skupa podataka - v2.0
+# Verzija - v3.0
 
 # Atributi skupa podataka
 
