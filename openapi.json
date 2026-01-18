@@ -1,164 +1,91 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "API Glazbenih Spotova",
-    "description": "RESTful API za upravljanje i pregled baze podataka YouTube glazbenih spotova.",
+    "title": "Glazbeni Spotovi API",
     "version": "1.0.0",
+    "description": "API za pristup i upravljanje podacima o glazbenim spotovima na YouTubeu",
     "contact": {
       "name": "Nikola Antolović",
-      "email": "nantolovic@student.unizg.hr"
+      "url": "https://github.com/nixpoe/musicvideos"
     },
     "license": {
-      "name": "Creative Commons Zero v1.0",
+      "name": "CC0 1.0",
       "url": "https://creativecommons.org/publicdomain/zero/1.0/"
     }
   },
-  "servers": [
-    {
-      "url": "http://localhost:5000",
-      "description": "Lokalni razvojni poslužitelj"
-    }
-  ],
   "paths": {
-    "/api/spotovi": {
+    "/api/videos": {
       "get": {
-        "summary": "Dohvaćanje cjelokupne kolekcije",
-        "description": "Vraća listu svih spotova iz baze podataka unutar response omotača.",
+        "summary": "Dohvati sve glazbene spotove",
         "responses": {
           "200": {
-            "description": "Uspješan dohvat podataka",
+            "description": "Uspješno dohvaćeni podaci",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "summary": "Ubacivanje novog resursa",
-        "description": "Dodaje novi glazbeni spot u bazu podataka.",
+        "summary": "Dodaj novi glazbeni spot",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/Spot" }
+              "schema": {
+                "$ref": "#/components/schemas/VideoInput"
+              }
             }
           }
         },
         "responses": {
-          "201": { "description": "Resurs uspješno kreiran" },
-          "400": { "description": "Neispravni ulazni podaci" }
-        }
-      }
-    },
-    "/api/spotovi/{id}": {
-      "parameters": [
-        {
-          "name": "id",
-          "in": "path",
-          "required": true,
-          "description": "Jedinstveni identifikator spota",
-          "schema": { "type": "integer" }
-        }
-      ],
-      "get": {
-        "summary": "Dohvaćanje pojedinačnog resursa",
-        "responses": {
-          "200": { "description": "Resurs pronađen" },
-          "404": { "description": "Resurs nije pronađen" }
-        }
-      },
-      "put": {
-        "summary": "Osvježavanje elemenata resursa",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/Spot" }
-            }
+          "201": {
+            "description": "Video uspješno kreiran"
           }
-        },
-        "responses": {
-          "200": { "description": "Resurs uspješno ažuriran" },
-          "404": { "description": "Resurs nije pronađen" }
-        }
-      },
-      "delete": {
-        "summary": "Brisanje pojedinog resursa",
-        "responses": {
-          "200": { "description": "Resurs uspješno obrisan" },
-          "404": { "description": "Resurs nije pronađen" }
-        }
-      }
-    },
-    "/api/spotovi/top": {
-      "get": {
-        "summary": "Dodatna točka: Top 5 spotova",
-        "description": "Vraća listu 5 najgledanijih spotova.",
-        "responses": {
-          "200": { "description": "Uspješno" }
-        }
-      }
-    },
-    "/api/spotovi/zanr/{zanr_name}": {
-      "get": {
-        "summary": "Dodatna točka: Pretraga po žanru",
-        "parameters": [
-          {
-            "name": "zanr_name",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
-        ],
-        "responses": {
-          "200": { "description": "Uspješno" }
-        }
-      }
-    },
-    "/api/spotovi/statistika": {
-      "get": {
-        "summary": "Dodatna točka: Statistika",
-        "description": "Vraća ukupan broj spotova i prosječno trajanje.",
-        "responses": {
-          "200": { "description": "Uspješno" }
-        }
-      }
-    },
-    "/openapi.json": {
-      "get": {
-        "summary": "Posluživanje specifikacije",
-        "description": "Vraća ovaj OpenAPI dokument u JSON formatu.",
-        "responses": {
-          "200": { "description": "Uspješan dohvat dokumentacije" }
         }
       }
     }
   },
   "components": {
     "schemas": {
-      "ApiResponse": {
+      "Video": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "izvodac": { "type": "string" },
+          "pjesma": { "type": "string" },
+          "godina": { "type": "string" },
+          "pregledi": { "type": "string" }
+        }
+      },
+      "VideoResponse": {
         "type": "object",
         "properties": {
           "status": { "type": "string" },
           "message": { "type": "string" },
-          "response": { "type": "object" }
+          "response": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Video"
+            }
+          }
         }
       },
-      "Spot": {
+      "VideoInput": {
         "type": "object",
+        "required": ["izvodac", "pjesma", "godina", "pregledi"],
         "properties": {
-          "Naslov": { "type": "string" },
-          "Redatelj": { "type": "string" },
-          "Label": { "type": "string" },
-          "Datum": { "type": "string", "format": "date" },
-          "Trajanje_sekunde": { "type": "integer" },
-          "Zanr": { "type": "string" },
-          "Pregledi": { "type": "integer" },
-          "Komentari": { "type": "integer" },
-          "Lajkovi": { "type": "integer" }
+          "izvodac": { "type": "string" },
+          "pjesma": { "type": "string" },
+          "godina": { "type": "string" },
+          "pregledi": { "type": "string" }
         }
       }
     }
   }
 }
+

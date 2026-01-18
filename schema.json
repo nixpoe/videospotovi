@@ -14,10 +14,10 @@
             "Datum",
             "Trajanje_sekunde",
             "Zanr",
-            "Pregledi",
-            "Komentari",
-            "Lajkovi",
-            "Izvodaci"
+            "pregledi",
+            "komentari",
+            "lajkovi",
+            "izvodaci"
         ],
         "properties": {
             "Naslov": {
@@ -44,19 +44,19 @@
                 "type": "string",
                 "title": "Žanr"
             },
-            "Pregledi": {
+            "pregledi": {
                 "type": "integer",
                 "title": "Broj pregleda"
             },
-            "Komentari": {
+            "komentari": {
                 "type": "integer",
                 "title": "Broj komentara"
             },
-            "Lajkovi": {
+            "lajkovi": {
                 "type": "integer",
                 "title": "Broj lajkova"
             },
-            "Izvodaci": {
+            "izvodaci": {
                 "type": "array",
                 "title": "Izvođači",
                 "items": {

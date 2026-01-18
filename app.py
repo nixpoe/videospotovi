@@ -1,155 +1,278 @@
-from flask import Flask, render_template, jsonify, request, make_response
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import datetime
+from flask import Flask, request, jsonify, render_template, session, url_for, redirect
+from authlib.integrations.flask_client import OAuth
+from functools import wraps
+from os import environ as env
+from dotenv import load_dotenv
+import json
+import csv
+
+load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = env.get("APP_SECRET_KEY")
 
-DB_CONFIG = {
-    "dbname": "YTspotovi",
-    "user": "postgres",
-    "password": "1354",
-    "host": "localhost",
-    "port": "5432"
-}
+oauth = OAuth(app)
+auth0 = oauth.register(
+    'auth0',
+    client_id=env.get("AUTH0_CLIENT_ID"),
+    client_secret=env.get("AUTH0_CLIENT_SECRET"),
+    api_base_url=f'https://{env.get("AUTH0_DOMAIN")}',
+    access_token_url=f'https://{env.get("AUTH0_DOMAIN")}/oauth/token',
+    authorize_url=f'https://{env.get("AUTH0_DOMAIN")}/authorize',
+    jwks_uri=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/jwks.json',
+    client_kwargs={
+        'scope': 'openid profile email'
+    }
+)
 
-def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'profile' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
 
-def create_response(data, message="Uspješno", status=200):
-    return make_response(jsonify({
-        "status": "OK" if status < 400 else "Error",
-        "message": message,
-        "response": data
-    }), status)
+def load_data():
+    with open('music_videos.json', 'r', encoding='utf-8') as f:
+        return json.load(f)
 
-@app.errorhandler(404)
-def not_found(e):
-    return create_response(None, "Resurs nije pronađen", 404)
+def save_data(data):
+    with open('music_videos.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
-@app.errorhandler(500)
-def server_error(e):
-    return create_response(None, f"Serverska pogreška: {str(e)}", 500)
+@app.route('/login')
+def login():
+    return auth0.authorize_redirect(
+        redirect_uri=url_for('callback', _external=True)
+    )
 
+@app.route('/callback')
+def callback():
+    auth0.authorize_access_token()
+    resp = auth0.get('userinfo')
+    userinfo = resp.json()
+    session['profile'] = userinfo
+    return redirect(url_for('profile'))
 
-# a. GET - Dohvati sve spotove
-@app.route('/api/spotovi', methods=['GET'])
-def get_all_spotovi():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cur.execute('SELECT * FROM "Spotovi"')
-        data = cur.fetchall()
-        return create_response(data)
-    except Exception as e:
-        return create_response(None, str(e), 500)
-    finally:
-        cur.close()
-        conn.close()
+@app.route('/profile')
+@requires_auth
+def profile():
+    return render_template('profile.html', userinfo=session['profile'])
 
-# b. GET - Dohvati pojedinačni spot po ID-u
-@app.route('/api/spotovi/<int:id>', methods=['GET'])
-def get_spot_by_id(id):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    try:
-        cur.execute('SELECT * FROM "Spotovi" WHERE id = %s', (id,))
-        spot = cur.fetchone()
-        if spot:
-            return create_response(spot)
-        return create_response(None, "Spot s tim ID-em ne postoji", 404)
-    finally:
-        cur.close()
-        conn.close()
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(
+        f'https://{env.get("AUTH0_DOMAIN")}/v2/logout?' +
+        f'client_id={env.get("AUTH0_CLIENT_ID")}&' +
+        f'returnTo={url_for("home", _external=True)}'
+    )
 
-# d. POST - Unos novog spota
-@app.route('/api/spotovi', methods=['POST'])
-def create_spot():
-    data = request.json
-    if not data:
-        return create_response(None, "Nedostaju podaci", 400)
+@app.route('/refresh-exports')
+@requires_auth
+def refresh_exports():
+    videos = load_data()
     
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        sql = """
-            INSERT INTO "Spotovi" ("Naslov", "Redatelj", "Label", "Datum", "Trajanje_sekunde", "Zanr", "Pregledi", "Komentari", "Lajkovi")
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
-        """
-        cur.execute(sql, (
-            data.get('Naslov'), data.get('Redatelj'), data.get('Label'),
-            data.get('Datum'), data.get('Trajanje_sekunde'), data.get('Zanr'),
-            data.get('Pregledi', 0), data.get('Komentari', 0), data.get('Lajkovi', 0)
-        ))
-        new_id = cur.fetchone()[0]
-        conn.commit()
-        return create_response({"id": new_id}, "Spot uspješno kreiran", 201)
-    except Exception as e:
-        conn.rollback()
-        return create_response(None, str(e), 500)
-    finally:
-        cur.close()
-        conn.close()
+    # Export to JSON
+    with open('static/exports/music_videos_export.json', 'w', encoding='utf-8') as f:
+        json.dump(videos, f, indent=2, ensure_ascii=False)
+    
+    # Export to CSV
+    with open('static/exports/music_videos_export.csv', 'w', encoding='utf-8', newline='') as f:
+        if videos:
+            # Collect all unique field names from all videos
+            all_fieldnames = set()
+            for video in videos:
+                all_fieldnames.update(video.keys())
+            
+            # Convert to sorted list for consistent ordering
+            fieldnames = sorted(list(all_fieldnames))
+            
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for video in videos:
+                row = video.copy()
+                if 'izvodaci' in row and isinstance(row['izvodaci'], list):
+                    row['izvodaci'] = ', '.join(row['izvodaci'])
+                writer.writerow(row)
+    
+    return redirect(url_for('home'))
 
-# e. PUT - Ažuriranje spota
-@app.route('/api/spotovi/<int:id>', methods=['PUT'])
-def update_spot(id):
-    data = request.json
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute('UPDATE "Spotovi" SET "Naslov"=%s, "Zanr"=%s, "Pregledi"=%s WHERE id=%s RETURNING id',
-                    (data.get('Naslov'), data.get('Zanr'), data.get('Pregledi'), id))
-        if cur.fetchone():
-            conn.commit()
-            return create_response({"id": id}, "Spot uspješno ažuriran")
-        return create_response(None, "Spot nije pronađen", 404)
-    finally:
-        cur.close()
-        conn.close()
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-# f. DELETE - Brisanje spota
-@app.route('/api/spotovi/<int:id>', methods=['DELETE'])
-def delete_spot(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute('DELETE FROM "Spotovi" WHERE id = %s RETURNING id', (id,))
-        if cur.fetchone():
-            conn.commit()
-            return create_response({"id": id}, "Spot obrisan")
-        return create_response(None, "Spot nije pronađen", 404)
-    finally:
-        cur.close()
-        conn.close()
+@app.route('/datatable')
+def datatable():
+    videos = load_data()
+    return render_template('datatable.html', videos=videos)
 
-# c. DODATNE GET TOČKE (3 komada)
+# CRUD endpoints
+@app.route('/api/v1/spots', methods=['GET'])
+def get_all_videos():
+    videos = load_data()
+    return {
+        "status": "OK",
+        "message": "Dohvaćeni svi glazbeni spotovi",
+        "response": videos
+    }, 200
 
-# 1. Pretraga po žanru
-@app.route('/api/spotovi/zanr/<string:zanr_name>', methods=['GET'])
-def get_by_zanr(zanr_name):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT * FROM "Spotovi" WHERE "Zanr" ILIKE %s', (f'%{zanr_name}%',))
-    return create_response(cur.fetchall())
+def add_jsonld_context(video):
+    """Add JSON-LD context to video object"""
+    return {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": video.get("Naslov"),
+        "director": {
+            "@type": "Person",
+            "name": video.get("Redatelj")
+        },
+        "duration": f"PT{video.get('Trajanje_sekunde')}S",
+        "uploadDate": video.get("Datum"),
+        "genre": video.get("Zanr"),
+        "interactionStatistic": [
+            {
+                "@type": "InteractionCounter",
+                "interactionType": "http://schema.org/WatchAction",
+                "userInteractionCount": video.get("pregledi")
+            },
+            {
+                "@type": "InteractionCounter",
+                "interactionType": "http://schema.org/LikeAction",
+                "userInteractionCount": video.get("lajkovi")
+            }
+        ],
+        **video  # Include all original fields
+    }
 
-# 2. Top 5 najgledanijih
-@app.route('/api/spotovi/top', methods=['GET'])
-def get_top_spots():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT "Naslov", "Pregledi" FROM "Spotovi" ORDER BY "Pregledi" DESC LIMIT 5')
-    return create_response(cur.fetchall())
+@app.route('/api/v1/spots/<id>', methods=['GET'])
+def get_video(id):
+    videos = load_data()
+    video = next((v for v in videos if v.get('id') == id), None)
+    if not video:
+        return {
+            "status": "Not Found",
+            "message": f"Video s ID-em {id} nije pronađen",
+            "response": None
+        }, 404
+    
+    # Add JSON-LD context
+    video_with_context = add_jsonld_context(video)
+    
+    return {
+        "status": "OK",
+        "message": "Video uspješno dohvaćen",
+        "response": video_with_context
+    }, 200
 
-# 3. Osnovna statistika
-@app.route('/api/spotovi/statistika', methods=['GET'])
-def get_stats():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute('SELECT COUNT(*) as ukupno_spotova, AVG("Trajanje_sekunde") as prosjecno_trajanje FROM "Spotovi"')
-    res = cur.fetchone()
-    if res['prosjecno_trajanje']: res['prosjecno_trajanje'] = round(float(res['prosjecno_trajanje']), 2)
-    return create_response(res)
+@app.route('/api/v1/spots', methods=['POST'])
+def create_video():
+    videos = load_data()
+    new_video = request.get_json()
+    
+    # Validate required fields
+    required_fields = ["Naslov", "Redatelj", "Label", "Datum", "Trajanje_sekunde", 
+                      "Zanr", "pregledi", "komentari", "lajkovi", "izvodaci"]
+    
+    if not all(field in new_video for field in required_fields):
+        return {
+            "status": "Bad Request",
+            "message": "Nedostaju obavezna polja",
+            "response": None
+        }, 400
+        
+    videos.append(new_video)
+    save_data(videos)
+    return {
+        "status": "Created",
+        "message": "Novi video uspješno dodan",
+        "response": new_video
+    }, 201
+
+@app.route('/api/v1/spots/<id>', methods=['PUT'])
+def update_video(id):
+    videos = load_data()
+    video_data = request.get_json()
+    video_index = next((index for (index, v) in enumerate(videos) if v['id'] == id), None)
+    
+    if video_index is None:
+        return {
+            "status": "Not Found",
+            "message": f"Video s ID-em {id} nije pronađen",
+            "response": None
+        }, 404
+        
+    videos[video_index].update(video_data)
+    save_data(videos)
+    return {
+        "status": "OK",
+        "message": "Video uspješno ažuriran",
+        "response": videos[video_index]
+    }, 200
+
+@app.route('/api/v1/spots/<id>', methods=['DELETE'])
+def delete_video(id):
+    videos = load_data()
+    video_index = next((index for (index, v) in enumerate(videos) if v['id'] == id), None)
+    
+    if video_index is None:
+        return {
+            "status": "Not Found",
+            "message": f"Video s ID-em {id} nije pronađen",
+            "response": None
+        }, 404
+        
+    deleted_video = videos.pop(video_index)
+    save_data(videos)
+    return {
+        "status": "OK",
+        "message": "Video uspješno obrisan",
+        "response": deleted_video
+    }, 200
+
+# Additional GET endpoints
+@app.route('/api/v1/spots/by-genre/<genre>', methods=['GET'])
+def get_videos_by_genre(genre):
+    videos = load_data()
+    filtered_videos = [v for v in videos if genre.lower() in v['Zanr'].lower()]
+    return {
+        "status": "OK",
+        "message": f"Pronađeni spotovi žanra: {genre}",
+        "response": filtered_videos
+    }, 200
+
+@app.route('/api/v1/spots/by-label/<label>', methods=['GET'])
+def get_videos_by_label(label):
+    videos = load_data()
+    filtered_videos = [v for v in videos if label.lower() in v['Label'].lower()]
+    return {
+        "status": "OK",
+        "message": f"Pronađeni spotovi izdavačke kuće: {label}",
+        "response": filtered_videos
+    }, 200
+
+@app.route('/api/v1/spots/most-viewed', methods=['GET'])
+def get_most_viewed_videos():
+    videos = load_data()
+    sorted_videos = sorted(videos, key=lambda x: x['pregledi'], reverse=True)
+    limit = request.args.get('limit', default=10, type=int)
+    return {
+        "status": "OK",
+        "message": f"Dohvaćeno {limit} najgledanijih spotova",
+        "response": sorted_videos[:limit]
+    }, 200
+
+@app.route('/api/docs', methods=['GET'])
+def get_api_docs():
+    with open('openapi.json', 'r', encoding='utf-8') as f:
+        spec = json.load(f)
+    return {
+        "status": "OK",
+        "message": "OpenAPI specifikacija uspješno dohvaćena",
+        "response": spec
+    }, 200
 
 if __name__ == '__main__':
     app.run(debug=True)
+
